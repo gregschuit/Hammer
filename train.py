@@ -9,6 +9,8 @@ from runners import build_runner
 from utils.dist_utils import init_dist
 from utils.dist_utils import exit_dist
 
+import warnings
+warnings.filterwarnings("ignore")
 
 @click.group(name='Distributed Training',
              help='Train a deep model by choosing a command (configuration).',
