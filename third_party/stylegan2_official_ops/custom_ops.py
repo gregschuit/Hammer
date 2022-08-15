@@ -52,7 +52,8 @@ def _find_compiler_bindir():
 
 def _find_compiler_bindir_posix():
     patterns = [
-        '/usr/local/cuda/bin'
+        '/usr/bin',
+        '/usr/local/cuda/bin',
     ]
     for pattern in patterns:
         matches = sorted(glob.glob(pattern))
