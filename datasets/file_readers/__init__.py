@@ -1,7 +1,7 @@
 # python3.7
 """Collects all file readers."""
 
-from .directory_reader import DirectoryReader
+from .directory_reader import DirectoryReader, CheXpertFrontalReader
 from .lmdb_reader import LmdbReader
 from .tar_reader import TarReader
 from .zip_reader import ZipReader
@@ -12,7 +12,8 @@ _READERS = {
     'dir': DirectoryReader,
     'lmdb': LmdbReader,
     'tar': TarReader,
-    'zip': ZipReader
+    'zip': ZipReader,
+    'chexpert-frontal': CheXpertFrontalReader,
 }
 
 
