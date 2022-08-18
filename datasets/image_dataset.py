@@ -140,6 +140,11 @@ class ImageDataset(BaseDataset):
         raw_image = self.transforms['decode'](buffer, use_dali=use_dali)
         raw_image = self.transforms['resize'](raw_image, use_dali=use_dali)
         raw_image = self.mirror_aug(raw_image, do_mirror, use_dali=use_dali)
+        
+        # Add channel
+        if len(raw_image.shape) == 2:
+            raw_image = raw_image.reshape(*raw_image.shape, 1)
+
         image = self.transforms['normalize'](raw_image, use_dali=use_dali)
 
         if self.use_label:
