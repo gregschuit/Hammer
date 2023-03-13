@@ -940,11 +940,9 @@ class BaseRunner(object):
                 self.timer.pre_execute(self)
 
                 # Move data to GPU if needed.
-                for key in batch_data:
-                    if not isinstance(batch_data[key], torch.Tensor):
-                        continue
-                    assert batch_data[key].shape[0] == self.batch_size
-                    batch_data[key] = batch_data[key].cuda()
+                batch_data = self.train_loader.dataset.batch_to_device(
+                    batch_data, self.batch_size
+                )
 
                 # Execute training step.
                 self.batch_data = batch_data  # For viz ONLY.
