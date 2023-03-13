@@ -1,6 +1,7 @@
 # python3.7
 """Collects all models."""
 
+from .faster_rcnn import FasterRCNN
 from .pggan_generator import PGGANGenerator
 from .pggan_discriminator import PGGANDiscriminator
 from .stylegan_generator import StyleGANGenerator
@@ -15,6 +16,7 @@ from .inception_model import InceptionModel
 __all__ = ['build_model']
 
 _MODELS = {
+    'FasterRCNN': FasterRCNN,
     'PGGANGenerator': PGGANGenerator,
     'PGGANDiscriminator': PGGANDiscriminator,
     'StyleGANGenerator': StyleGANGenerator,
