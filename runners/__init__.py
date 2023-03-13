@@ -1,6 +1,7 @@
 # python3.7
 """Collects all runners."""
 
+from .faster_rcnn_runner import FasterRCNNRunner
 from .stylegan_runner import StyleGANRunner
 from .stylegan2_runner import StyleGAN2Runner
 from .stylegan3_runner import StyleGAN3Runner
@@ -8,6 +9,7 @@ from .stylegan3_runner import StyleGAN3Runner
 __all__ = ['build_runner']
 
 _RUNNERS = {
+    'FasterRCNNRunner': FasterRCNNRunner,
     'StyleGANRunner': StyleGANRunner,
     'StyleGAN2Runner': StyleGAN2Runner,
     'StyleGAN3Runner': StyleGAN3Runner

@@ -17,6 +17,7 @@ batch) at one time.
 import os.path
 import json
 
+import torch
 from torch.utils.data import Dataset
 
 from utils.misc import parse_file_format
@@ -398,3 +399,14 @@ class BaseDataset(Dataset):
                 f'{k}: {v}' for k, v in self.transform_kwargs.items()]) + '}'
         }
         return dataset_info
+
+    def batch_to_device(self, batch_data, batch_size):
+        for key in batch_data:
+            if not isinstance(batch_data[key], torch.Tensor):
+                continue
+            assert batch_data[key].shape[0] == batch_size
+            batch_data[key] = batch_data[key].cuda()
+        return batch_data
+
+    def get_collate_fn(self):
+        return None  # Use default collate_fn from pytorch.

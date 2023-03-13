@@ -1,6 +1,7 @@
 # python3.7
 """Collects all configs."""
 
+from .faster_rcnn_config import FasterRCNNConfig
 from .stylegan_config import StyleGANConfig
 from .stylegan2_config import StyleGAN2Config
 from .stylegan2_finetune_config import StyleGAN2FineTuneConfig
@@ -9,6 +10,7 @@ from .stylegan3_config import StyleGAN3Config
 __all__ = ['CONFIG_POOL', 'build_config']
 
 CONFIG_POOL = [
+    FasterRCNNConfig,
     StyleGANConfig,
     StyleGAN2Config,
     StyleGAN2FineTuneConfig,

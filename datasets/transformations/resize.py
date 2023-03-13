@@ -34,9 +34,15 @@ class Resize(BaseTransformation):
             if image.shape[:2] == self.image_size:
                 outputs.append(image)
                 continue
-            outputs.append(
-                cv2.resize(image, (self.image_size[1], self.image_size[0]),
-                           interpolation=cv2.INTER_AREA))
+            resized = cv2.resize(
+                image,
+                (self.image_size[1], self.image_size[0]),
+                interpolation=cv2.INTER_AREA,
+            )
+            # Add single channel as cv2 drops it on resize.
+            if len(resized.shape) == 2:
+                resized = np.expand_dims(resized, axis=2)
+            outputs.append(resized)
         return outputs
 
     def _DALI_forward(self, data):
