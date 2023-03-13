@@ -3,13 +3,15 @@
 
 from .image_dataset import ImageDataset
 from .paired_dataset import PairedDataset
+from .object_detection_dataset import ObjectDetectionDataset
 from .data_loaders import build_data_loader
 
 __all__ = ['build_dataset']
 
 _DATASETS = {
     'ImageDataset': ImageDataset,
-    'PairedDataset': PairedDataset
+    'ObjectDetectionDataset': ObjectDetectionDataset,
+    'PairedDataset': PairedDataset,
 }
 
 

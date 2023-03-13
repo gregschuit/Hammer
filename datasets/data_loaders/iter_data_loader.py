@@ -54,6 +54,7 @@ class IterDataLoader(BaseDataLoader):
             drop_last_sample=self.drop_last_sample,
             for_dali=False)
         self._batch_grouper = DataLoader(dataset=self._dataset,
+                                         collate_fn=self._dataset.get_collate_fn(),
                                          batch_size=self.batch_size,
                                          sampler=self._sampler,
                                          shuffle=False,

@@ -10,6 +10,7 @@ https://pytorch.org/vision/main/models/generated/torchvision.models.detection.fa
 """
 
 import numpy as np
+import torch
 
 from .base_dataset import BaseDataset
 
@@ -43,9 +44,12 @@ class ObjectDetectionDataset(BaseDataset):
                  file_format='zip',
                  annotation_path=None,
                  annotation_meta=None,
+                 annotation_format='json',
                  max_samples=-1,
                  transform_kwargs=None,
-                 num_classes=None):
+                 num_classes=None,
+                 mirror=False,
+                 ):
         """Initializes the dataset.
 
         Args:
@@ -55,13 +59,16 @@ class ObjectDetectionDataset(BaseDataset):
                 classes. For example, sometimes, we may want to leave an
                 additional class for an auxiliary task. (default: None)
         """
+        assert annotation_format == 'json', "Only json annotation is admited in this DS."
+        assert not mirror, "Mirror is not yet implemented for this DS."
+        
         super().__init__(root_dir=root_dir,
                          file_format=file_format,
                          annotation_path=annotation_path,
                          annotation_meta=annotation_meta,
-                         annotation_format='json',
+                         annotation_format=annotation_format,
                          max_samples=max_samples,
-                         mirror=False,
+                         mirror=mirror,
                          transform_kwargs=transform_kwargs)
 
         self.dataset_classes = 0  # Number of classes contained in the dataset.
@@ -82,21 +89,33 @@ class ObjectDetectionDataset(BaseDataset):
             self.num_classes = int(num_classes)
         assert self.num_classes > 0
 
-    def get_raw_data(self, idx):
+    def __getitem__(self, idx):
+        """Overrides the BaseDataset __getitem__ method.
+        
+        It replaces the dict structure for a tuple. This makes
+        the collate_fn implementation much simpler.
+        """
+        item = super().__getitem__(idx)
+        return item['image'], item['targets']
 
+    def get_raw_data(self, idx):
         image_path = self.items[idx]['img_path']
         labels = self.items[idx]['labels']
         bboxes = self.items[idx]['bboxes']
+        targets = {
+            'labels': torch.tensor(labels),
+            'boxes': torch.tensor(bboxes),
+        }
 
         # Load image to buffer.
         buffer = np.frombuffer(self.fetch_file(image_path), dtype=np.uint8)
         idx = np.array(idx)
 
-        return [idx, buffer, labels, bboxes]
+        return [idx, buffer, targets]
 
     @property
     def num_raw_outputs(self):
-        return 4  # [idx, buffer, labels, bboxes]
+        return 3  # [idx, buffer, targets]
 
     def parse_transform_config(self):
         image_size = self.transform_kwargs.get('image_size')
@@ -112,16 +131,23 @@ class ObjectDetectionDataset(BaseDataset):
         )
 
     def transform(self, raw_data, use_dali=False):
-        idx, buffer, labels, bboxes = raw_data
+        idx, buffer, targets = raw_data
 
         raw_image = self.transforms['decode'](buffer, use_dali=use_dali)
         raw_image = self.transforms['resize'](raw_image, use_dali=use_dali)
         image = self.transforms['normalize'](raw_image, use_dali=use_dali)
 
-        return [idx, raw_image, image, labels, bboxes]
+        return [idx, raw_image, torch.tensor(image), targets]
 
-    def batch_to_device(self, batch):
-        images, targets = batch['images'], batch['targets']
+    def _collate_fn(self, batch):
+        collated_batch = tuple(zip(*batch))
+        return dict(zip(['image', 'targets'], collated_batch))
+
+    def get_collate_fn(self):
+        return self._collate_fn
+
+    def batch_to_device(self, batch, _batch_size):
+        images, targets = batch['image'], batch['targets']
 
         images = list(image.cuda() for image in images)
         targets = [{k: v.cuda() for k, v in t.items()} for t in targets]
@@ -130,11 +156,10 @@ class ObjectDetectionDataset(BaseDataset):
 
     @property
     def output_keys(self):
-        return ['index', 'raw_image', 'image', 'labels', 'bboxes']
+        return ['index', 'raw_image', 'image', 'targets']
 
     def info(self):
         dataset_info = super().info()
         dataset_info['Dataset classes'] = self.dataset_classes
-        dataset_info['Use label'] = self.use_label
         dataset_info['Num classes for training'] = self.num_classes
         return dataset_info
