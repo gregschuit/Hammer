@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "hammer"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.12"
+torchvision = "0.13.1"
+ipykernel = "^6.22.0"
+easydict = "^1.10"
+scipy = "^1.10.1"
+tensorboard = "^2.13.0"
+pandas = "^2.0.1"
+tqdm = "^4.65.0"
+matplotlib = "^3.7.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
