@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Help message.
-if [[ $# -lt 3 ]]; then
-    echo "This script launches a job of training StyleGAN2 on FFHQ-256."
+if [[ $# -lt 1 ]]; then
+    echo "This script launches a job of training StyleGAN2 on MIMIC-CXR."
     echo
     echo "Note: All settings are already preset for training with 8 GPUs." \
          "Please pass addition options, which will overwrite the original" \
@@ -16,18 +16,24 @@ if [[ $# -lt 3 ]]; then
 fi
 
 GPUS=$1
-TRAIN_DATASET=$2
-VAL_DATASET=$3
+
+MIMIC_CXR_JPG_DIR=/mnt/workspace/mimic-cxr-jpg/images-small
+TRAIN_ANNOTATIONS=/home/gregschuit/projects/data/annotations/paths_PA_train.csv
+VALID_ANNOTATIONS=/home/gregschuit/projects/data/annotations/paths_PA_valid.csv
 
 ./scripts/dist_train.sh ${GPUS} stylegan2 \
-    --job_name='stylegan2_chexpert_frontal_testing' \
+    --job_name='stylegan2_imagenome256_pa_resized' \
     --seed=0 \
     --resolution=256 \
     --image_channels=1 \
-    --train_dataset=${TRAIN_DATASET} \
-    --val_dataset=${VAL_DATASET} \
+    --train_dataset=${MIMIC_CXR_JPG_DIR} \
+    --val_dataset=${MIMIC_CXR_JPG_DIR} \
+    --train_anno_path=${TRAIN_ANNOTATIONS} \
+    --val_anno_path=${VALID_ANNOTATIONS} \
+    --train_anno_format=txt \
+    --val_anno_format=txt \
     --val_max_samples=-1 \
-    --total_img=191_230 \
+    --total_img=300_000 \
     --batch_size=4 \
     --val_batch_size=16 \
     --train_data_mirror=true \
@@ -36,8 +42,8 @@ VAL_DATASET=$3
     --data_workers=3 \
     --data_prefetch_factor=2 \
     --data_pin_memory=true \
-    --train_data_file_format='chexpert-frontal' \
-    --val_data_file_format='chexpert-frontal' \
+    --train_data_file_format='jpg_dir' \
+    --val_data_file_format='jpg_dir' \
     --g_init_res=4 \
     --latent_dim=512 \
     --d_fmaps_factor=1.0 \

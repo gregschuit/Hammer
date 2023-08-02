@@ -1,33 +1,41 @@
 #!/bin/bash
 
 # Help message.
-if [[ $# -lt 3 ]]; then
-    echo "This script launches a job of training StyleGAN2 on FFHQ-256."
+if [[ $# -lt 1 ]]; then
+    echo "This script launches a job for training Conditional StyleGAN2 on MIMIC-CXR."
     echo
-    echo "Note: All settings are already preset for training with 8 GPUs." \
-         "Please pass addition options, which will overwrite the original" \
-         "settings, if needed."
+    echo "    - Resolution: 256"
+    echo "    - Conditioning on: devices (4), multilabel"
+    echo "    - Views: PA"
+    echo "    - Squaring: resized"
+    echo "    - Balance: not balanced"
     echo
-    echo "Usage: $0 GPUS DATASET [OPTIONS]"
+    echo "Usage: $0 GPUS [OPTIONS]"
     echo
-    echo "Example: $0 8 /data/ffhq256.zip [--help]"
+    echo "Example: $0 8 [--help]"
     echo
     exit 0
 fi
 
 GPUS=$1
-TRAIN_DATASET=$2
-VAL_DATASET=$3
+
+MIMIC_CXR_JPG_DIR=/mnt/workspace/mimic-cxr-jpg/images-small
+TRAIN_ANNOTATIONS=/home/gregschuit/projects/data/annotations/device_PA_train.csv
+VALID_ANNOTATIONS=/home/gregschuit/projects/data/annotations/device_PA_valid.csv
 
 ./scripts/dist_train.sh ${GPUS} stylegan2 \
-    --job_name='stylegan2_chexpert_frontal_testing' \
+    --job_name='c_stylegan2_imagenome256_device_pa_resized' \
     --seed=0 \
     --resolution=256 \
     --image_channels=1 \
-    --train_dataset=${TRAIN_DATASET} \
-    --val_dataset=${VAL_DATASET} \
+    --train_dataset=${MIMIC_CXR_JPG_DIR} \
+    --val_dataset=${MIMIC_CXR_JPG_DIR} \
+    --train_anno_path=${TRAIN_ANNOTATIONS} \
+    --val_anno_path=${VALID_ANNOTATIONS} \
+    --train_anno_format=csv \
+    --val_anno_format=csv \
     --val_max_samples=-1 \
-    --total_img=191_230 \
+    --total_img=300_000 \
     --batch_size=4 \
     --val_batch_size=16 \
     --train_data_mirror=true \
@@ -36,8 +44,8 @@ VAL_DATASET=$3
     --data_workers=3 \
     --data_prefetch_factor=2 \
     --data_pin_memory=true \
-    --train_data_file_format='chexpert-frontal' \
-    --val_data_file_format='chexpert-frontal' \
+    --train_data_file_format='jpg_dir' \
+    --val_data_file_format='jpg_dir' \
     --g_init_res=4 \
     --latent_dim=512 \
     --d_fmaps_factor=1.0 \
@@ -64,4 +72,5 @@ VAL_DATASET=$3
     --enable_amp=false \
     --use_ada=false \
     --num_fp16_res=0 \
+    --label_dim=4 \
     ${@:4}
