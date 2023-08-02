@@ -8,7 +8,6 @@ __pycache__/
 /.vscode/
 /.idea/
 .ipynb_*/
-*.ipynb
 .DS_Store
 *.sw[pon]
 
@@ -51,3 +50,5 @@ events.*
 
 # Files that should not be ignored.
 !/requirements/*
+
+.venv/
