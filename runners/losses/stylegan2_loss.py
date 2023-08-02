@@ -12,6 +12,47 @@ from .base_loss import BaseLoss
 
 __all__ = ['StyleGAN2Loss']
 
+from ultralytics import YOLO
+from torchvision.transforms.functional import gaussian_blur, to_pil_image, pil_to_tensor
+
+
+SOTF_BOX = False
+PENALTY_W = 10
+
+def postprocess_batch(generated_images):
+    _min, _max = -1, 1
+    generated_images = torch.clamp(generated_images, _min, _max)
+    generated_images = (generated_images - _min) / (_max - _min)
+    return generated_images
+
+
+def find_cardiac_box(result):
+    try:
+        return (result.boxes.cls == 2).nonzero()[0][0].item()
+    except IndexError:
+        return None
+
+
+def get_box(result, idx):
+    default_box = torch.tensor([95, 121, 196, 194])  # Avg box from training set
+    if idx is None:
+        return default_box
+    return result.boxes.xyxy[idx]
+
+
+def get_mask(img, box, device):
+    mask = torch.ones_like(pil_to_tensor(img))
+    mask = mask.to(device)
+    x1, y1, x2, y2 = map(int, box)
+    mask[:, y1:y2, x1:x2] = 0
+
+    if SOTF_BOX:
+        margin = 40
+        mask[:, y1 - margin : y2 + margin, x1 - margin : x2 + margin] = 0
+        mask = gaussian_blur(mask, 51, sigma=30)
+
+    return mask
+
 
 class StyleGAN2Loss(BaseLoss):
     """Contains the class to compute losses for training StyleGAN2.
@@ -83,6 +124,13 @@ class StyleGAN2Loss(BaseLoss):
                                      log_strategy='AVERAGE')
             self.pl_mean = torch.zeros((), device=runner.device)
 
+        self.yolo = YOLO('/home/gregschuit/projects/cxr-object-detection/runs/detect/train/weights/best.pt', task='detect')
+        self.yolo.to(runner.device)
+        runner.running_stats.add('Loss/OutOfBoxPenalty',
+                                 log_name='oob_penalty',
+                                 log_format='.3f',
+                                 log_strategy='AVERAGE')
+
         # Log loss settings.
         runner.logger.info('gradient penalty (D regularizer):', indent_level=1)
         runner.logger.info(f'r1_gamma: {self.r1_gamma}', indent_level=2)
@@ -106,16 +154,34 @@ class StyleGAN2Loss(BaseLoss):
         """
         # Prepare latent codes and labels.
         batch_size = batch_size or runner.batch_size
+        region_based = True
+
+        if region_based:
+            batch_size /= 2
+            if batch_size % 1 != 0:
+                raise ValueError('`batch_size` must be even when using region_based loss.')
+            batch_size = int(batch_size)
+
         latent_dim = runner.models['generator'].latent_dim
         label_dim = runner.models['generator'].label_dim
         latents = torch.randn((batch_size, *latent_dim),
                               device=runner.device,
                               requires_grad=requires_grad)
-        labels = None
-        if label_dim > 0:
-            rnd_labels = torch.randint(
-                0, label_dim, (batch_size,), device=runner.device)
-            labels = F.one_hot(rnd_labels, num_classes=label_dim)
+
+        if not region_based:
+            labels = None
+            if label_dim > 0:
+                rnd_labels = torch.randint(
+                    0, label_dim, (batch_size,), device=runner.device)
+                labels = F.one_hot(rnd_labels, num_classes=label_dim)
+        else:
+            positives = torch.ones(batch_size, device=runner.device, dtype=torch.int64)
+            negatives = torch.zeros(batch_size, device=runner.device, dtype=torch.int64)
+            labels = torch.cat([negatives, positives], dim=0)
+            labels = F.one_hot(labels, num_classes=2)
+
+        if region_based:
+            latents = torch.cat([latents, latents], dim=0)
 
         # Forward generator.
         G = runner.ddp_models['generator']
@@ -167,15 +233,45 @@ class StyleGAN2Loss(BaseLoss):
 
     def g_loss(self, runner, _data, sync=True):
         """Computes loss for generator."""
+
         fake_results = self.run_G(runner, sync=sync)
+
+        # Post process batch
+        images = postprocess_batch(fake_results['image'])
+        negative_images = images[0:runner.batch_size // 2]
+        positive_images = images[runner.batch_size // 2:]
+
+        with torch.no_grad():
+            pil_imgs = [to_pil_image(img) for img in negative_images]
+            results = self.yolo.predict(pil_imgs, verbose=False)
+
+        cardiac_boxes_idxs = [find_cardiac_box(result) for result in results]
+        cardiac_boxes = [
+            get_box(result, idx) for result, idx in zip(results, cardiac_boxes_idxs)
+        ]
+
+        masks = [
+            get_mask(
+                img, box.cpu().tolist(),
+                device=runner.device
+            ) for img, box in zip(pil_imgs, cardiac_boxes)
+        ]
+        mask = torch.cat(masks, axis=0).unsqueeze(1)
+
+        # Substract images
+        sqr_err = (negative_images - positive_images) ** 2
+        masked_sqr_err = sqr_err * mask
+        masked_mse = torch.sum(masked_sqr_err) / torch.sum(mask)
+
         fake_scores = self.run_D(runner,
                                  images=fake_results['image'],
                                  labels=fake_results['label'],
                                  sync=False)['score']
         g_loss = F.softplus(-fake_scores)
         runner.running_stats.update({'Loss/G': g_loss})
+        runner.running_stats.update({'Loss/OutOfBoxPenalty': masked_mse})
 
-        return g_loss.mean()
+        return g_loss.mean() + PENALTY_W * masked_mse
 
     def g_reg(self, runner, _data, sync=True):
         """Computes the regularization loss for generator."""
