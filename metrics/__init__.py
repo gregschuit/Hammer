@@ -2,6 +2,7 @@
 """Collects all metrics."""
 
 from .gan_snapshot import GANSnapshot
+from .faster_rcnn_losses import FasterRCNNLossesMetric
 from .fid import FIDMetric as FID
 from .fid import FID50K
 from .fid import FID50KFull
@@ -27,6 +28,7 @@ from .equivariance import EQR50K
 __all__ = ['build_metric']
 
 _METRICS = {
+    'FasterRCNNLosses': FasterRCNNLossesMetric,
     'GANSnapshot': GANSnapshot,
     'FID': FID,
     'FID50K': FID50K,

@@ -142,3 +142,15 @@ To train a Faster R-CNN model, the recommended settings are as follows:
             loss_type=LOSS,
             loss_kwargs=dict(),
         )
+
+        self.config.metrics.update(
+            FasterRCNNLosses=dict(
+                init_kwargs=dict(name='frnn_losses'),
+                eval_kwargs=dict(
+                    frcnn=dict(),
+                ),
+                interval=None,
+                first_iter=None,
+                save_best=True
+            )
+        )

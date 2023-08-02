@@ -17,10 +17,10 @@ fi
 
 GPUS=$1
 
-ANNOTATIONS_LOCATIONS_PATH_TRAIN=/home/gregschuit/projects/med-region-based-cf/data/annotations/locations_train.json
-ANNOTATIONS_LOCATIONS_PATH_VAL=/home/gregschuit/projects/med-region-based-cf/data/annotations/locations_val.json
+ANNOTATIONS_LOCATIONS_PATH_TRAIN=/home/gregschuit/projects/med-region-based-cf/data/annotations/locations_train_v2.json
+ANNOTATIONS_LOCATIONS_PATH_VAL=/home/gregschuit/projects/med-region-based-cf/data/annotations/locations_val_v2.json
 MIMIC_CXR_JPG_DIR_TRAIN=/mnt/workspace/mimic-cxr-jpg/images-256-imagenome-splits/train
-MIMIC_CXR_JPG_DIR_VAL=/mnt/workspace/mimic-cxr-jpg/images-256-imagenome-splits/val
+MIMIC_CXR_JPG_DIR_VAL=/mnt/workspace/mimic-cxr-jpg/images-256-imagenome-splits/valid
 
 TRAIN_ANNOTATIONS=$ANNOTATIONS_LOCATIONS_PATH_TRAIN
 VAL_ANNOTATIONS=$ANNOTATIONS_LOCATIONS_PATH_VAL
@@ -28,18 +28,20 @@ TRAIN_DATASET=$MIMIC_CXR_JPG_DIR_TRAIN
 VAL_DATASET=$MIMIC_CXR_JPG_DIR_VAL
 
 ./scripts/dist_train.sh ${GPUS} faster_rcnn \
-    --job_name='faster_rcnn_imagenome_locations' \
+    --job_name='faster_rcnn_imagenome_locations_lr5e-5' \
     --seed=0 \
-    --total_epochs=20 \
+    --total_epochs=40 \
     --resolution=256 \
     --image_channels=1 \
+    --eval_interval=1000 \
+    --ckpt_interval=2000 \
     --train_dataset=${TRAIN_DATASET} \
     --val_dataset=${VAL_DATASET} \
     --train_anno_path=${TRAIN_ANNOTATIONS} \
     --val_anno_path=${VAL_ANNOTATIONS} \
     --train_anno_format=json \
     --val_anno_format=json \
-    --val_max_samples=-1 \
+    --val_max_samples=200 \
     --train_data_mirror=False \
     --val_data_mirror=False \
     --batch_size=6 \
@@ -51,8 +53,8 @@ VAL_DATASET=$MIMIC_CXR_JPG_DIR_VAL
     --data_pin_memory=true \
     --pretrained=False \
     --progress=True \
-    --num_classes=36 \
+    --num_classes=37 \
     --pretrained_backbone=False \
-    --trainable_backbone_layers=3 \
-    --lr=0.001 \
+    --trainable_backbone_layers=None \
+    --lr=0.00005 \
     ${@:3}

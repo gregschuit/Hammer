@@ -7,7 +7,7 @@ class FasterRCNN(nn.Module):
     def __init__(self,
                  pretrained=True,
                  progress=True,
-                 num_classes=36,
+                 num_classes=37,
                  pretrained_backbone=True,
                  trainable_backbone_layers=3,
                 ) -> None:
