@@ -300,19 +300,19 @@ To train a StyleGAN2 model, the recommended settings are as follows:
                                pl_interval=pl_interval)
         )
 
-        self.config.controllers.update(
-            DatasetVisualizer=dict(
-                viz_keys=['raw_image'],
-                viz_num=(32 if label_dim == 0 else 8),
-                viz_name='Real Data',
-                viz_groups=(4 if label_dim == 0 else 1),
-                viz_classes=min(10, label_dim),
-                row_major=True,
-                min_val=min_val,
-                max_val=max_val,
-                shuffle=False
-            )
-        )
+        # self.config.controllers.update(
+        #     DatasetVisualizer=dict(
+        #         viz_keys=['raw_image'],
+        #         viz_num=(32 if label_dim == 0 else 8),
+        #         viz_name='Real Data',
+        #         viz_groups=(4 if label_dim == 0 else 1),
+        #         viz_classes=min(10, label_dim),
+        #         row_major=True,
+        #         min_val=min_val,
+        #         max_val=max_val,
+        #         shuffle=False
+        #     )
+        # )
 
         if self.args.pop('use_ada'):
             self.config.aug.update(
