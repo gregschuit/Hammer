@@ -166,6 +166,23 @@ def raw_label_to_one_hot(raw_label, num_classes):
     return one_hot
 
 
+def raw_label_list_to_one_hot(raw_label_list, num_classes):
+    """Converts a multilabel list into one-hot vector.
+    
+    Args:
+        raw_label_list: A List of integers representing the labels of the item.
+        num_classes: Total number of classes.
+
+    Returns:
+        one-hot vector of the given raw label list.
+
+    """
+    one_hot = np.zeros(num_classes, dtype=np.float32)
+    for i in raw_label_list:
+        one_hot[i] = 1.0
+    return one_hot
+
+
 def one_hot_to_raw_label(one_hot):
     """Converts a one-hot vector to a single value label.
 
