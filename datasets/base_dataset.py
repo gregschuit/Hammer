@@ -14,6 +14,7 @@ pre-processing the raw data. But it merely handles one data item (instead of a
 batch) at one time.
 """
 
+import csv
 import os.path
 import json
 
@@ -371,6 +372,16 @@ class BaseDataset(Dataset):
                     items.append(fields[0])
                 else:
                     items.append(fields)
+            return items
+
+        if self.annotation_format == 'csv':
+            items = []
+            for row in csv.reader(fp):
+                if len(row) == 1:
+                    items.append(row[0])
+                else:
+                    items.append(row)
+                items.append(row)
             return items
 
         raise NotImplementedError(f'Not implemented annotation format '

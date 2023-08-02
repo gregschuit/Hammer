@@ -8,7 +8,7 @@ import os.path
 
 from .base_reader import BaseReader
 
-__all__ = ['DirectoryReader']
+__all__ = ['JPGDirectoryReader', 'PNGDirectoryReader', 'DirectoryReader']
 
 
 class DirectoryReader(BaseReader):
@@ -61,6 +61,18 @@ class CheXpertFrontalReader(DirectoryReader):
 
     @staticmethod
     def _valid_path_criterion(path):
-        if path.endswith(".jpg") and "frontal" in path:
-            return True
-        return False
+        return path.endswith(".jpg") and "frontal" in path
+
+
+class PNGDirectoryReader(DirectoryReader):
+
+    @staticmethod
+    def _valid_path_criterion(path):
+        return path.endswith(".png")
+
+
+class JPGDirectoryReader(DirectoryReader):
+
+    @staticmethod
+    def _valid_path_criterion(path):
+        return path.endswith(".jpg")
