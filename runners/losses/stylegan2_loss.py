@@ -12,6 +12,29 @@ from .base_loss import BaseLoss
 
 __all__ = ['StyleGAN2Loss']
 
+# TODO:
+
+# Primero debería implementarlo sin region_based loss.
+# Entonces:
+# 1. CHECK Parametrizar el uso de region_based loss.
+# 2. Programar el uso del encoder para embeber las imágenes reales.
+
+# Opción 1:
+# Tomar la mitad del batch, y usar imagenes reales.
+# Pasar las imágenes reales por el encoder y por el clasificador para obtener w.
+# Pasar z por las FF layers para obtener w.
+# Juntar ambos w y seguir con el flujo normal.
+
+# Para la opción 1.
+# En concreto:
+# 1. Obtener imágenes reales. Esta viene en la variable _data.
+# 2. Cargar el encoder. Por ahora puede ser una variable global?
+# 3. Calcular cuántas imágenes equivalen a la mitad del batch (o a un cuarto).
+# 4. Pasar las imágenes por el encoder.
+# 5. Probar con z o con w?
+# 6. Si elijo w, tengo que editar la condicionalidad para que siempre condicione
+#    con w, y no con z.
+
 
 class StyleGAN2Loss(BaseLoss):
     """Contains the class to compute losses for training StyleGAN2.
@@ -96,7 +119,13 @@ class StyleGAN2Loss(BaseLoss):
         runner.logger.info(f'pl_interval: {self.pl_interval}', indent_level=2)
 
     @staticmethod
-    def run_G(runner, batch_size=None, sync=True, requires_grad=False):
+    def run_G_from_latents(runner, latents, labels=None, sync=True):
+        G = runner.ddp_models['generator']
+        G_kwargs = runner.model_kwargs_train['generator']
+        with ddp_sync(G, sync=sync):
+            return G(latents, labels, **G_kwargs)
+
+    def run_G(self, runner, batch_size=None, sync=True, requires_grad=False):
         """Forwards generator.
 
         NOTE: The flag `requires_grad` sets whether to compute the gradient for
@@ -117,11 +146,23 @@ class StyleGAN2Loss(BaseLoss):
                 0, label_dim, (batch_size,), device=runner.device)
             labels = F.one_hot(rnd_labels, num_classes=label_dim)
 
-        # Forward generator.
-        G = runner.ddp_models['generator']
-        G_kwargs = runner.model_kwargs_train['generator']
-        with ddp_sync(G, sync=sync):
-            return G(latents, labels, **G_kwargs)
+        self.run_G_from_latents(runner, latents, labels, sync=sync)
+
+    def run_E(self, images, labels=None, sync=True):
+        """Encodes images into latent codes."""
+        # Forward encoder.
+        E = self.runner.ddp_models['encoder']
+        E_kwargs = self.runner.model_kwargs_train['encoder']
+        with ddp_sync(E, sync=sync):
+            return E(images, labels, **E_kwargs)
+
+    def run_C(self, images, labels=None, sync=True):
+        """Classifies images."""
+        # Forward classifier.
+        C = self.runner.ddp_models['classifier']
+        C_kwargs = self.runner.model_kwargs_train['classifier']
+        with ddp_sync(C, sync=sync):
+            return C(images, labels, **C_kwargs)
 
     @staticmethod
     def run_D(runner, images, labels, sync=True):
@@ -167,11 +208,42 @@ class StyleGAN2Loss(BaseLoss):
 
     def g_loss(self, runner, _data, sync=True):
         """Computes loss for generator."""
-        fake_results = self.run_G(runner, sync=sync)
-        fake_scores = self.run_D(runner,
-                                 images=fake_results['image'],
-                                 labels=fake_results['label'],
-                                 sync=False)['score']
+        images_real = _data['image']
+
+        # TODO: Programar E (encoder de chexplain) y C (densenet congelada).
+        # TODO: Programar opción para que se condicione en w y no en z.
+
+        images_latent = self.run_E(images_real, sync=sync)
+        images_label = self.run_C(images_real, sync=sync)
+
+        fake_results_from_encoded = self.run_G_from_latents(
+            runner,
+            images_latent,
+            images_label,
+            sync=sync,
+            requires_grad=True,
+        )
+
+        fake_results_from_noise = self.run_G(runner, sync=sync)
+        fake_scores_from_encoded = self.run_D(
+            runner,
+            images=fake_results_from_encoded['image'],
+            labels=fake_results_from_encoded['label'],
+            sync=False,
+        )['score']
+        fake_scores_from_noise = self.run_D(
+            runner,
+            images=fake_results_from_noise['image'],
+            labels=fake_results_from_noise['label'],
+            sync=False,
+        )['score']
+        fake_scores = torch.cat(
+            [
+                fake_scores_from_encoded,
+                fake_scores_from_noise,
+            ],
+            dim=0,
+        )
         g_loss = F.softplus(-fake_scores)
         runner.running_stats.update({'Loss/G': g_loss})
 
