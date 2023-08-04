@@ -5,6 +5,7 @@ from .faster_rcnn_loss import FasterRCNNLoss
 from .stylegan_loss import StyleGANLoss
 from .stylegan2_loss import StyleGAN2Loss
 from .stylegan3_loss import StyleGAN3Loss
+from .stylegan2_region_based_loss import StyleGAN2RegionBasedLoss
 
 __all__ = ['build_loss']
 
@@ -12,7 +13,8 @@ _LOSSES = {
     'FasterRCNNLoss': FasterRCNNLoss,
     'StyleGANLoss': StyleGANLoss,
     'StyleGAN2Loss': StyleGAN2Loss,
-    'StyleGAN3Loss': StyleGAN3Loss
+    'StyleGAN3Loss': StyleGAN3Loss,
+    'StyleGAN2RegionBasedLoss': StyleGAN2RegionBasedLoss,
 }
 
 

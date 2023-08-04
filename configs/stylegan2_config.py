@@ -10,6 +10,7 @@ DATASET = 'ImageDataset'
 DISCRIMINATOR = 'StyleGAN2Discriminator'
 GENERATOR = 'StyleGAN2Generator'
 LOSS = 'StyleGAN2Loss'
+REGION_BASED_LOSS = 'StyleGAN2RegionBasedLoss'
 
 
 class StyleGAN2Config(BaseConfig):
@@ -160,7 +161,26 @@ To train a StyleGAN2 model, the recommended settings are as follows:
                      'disable warming up.'),
             cls.command_option(
                 '--use_ada', type=cls.bool_type, default=False,
-                help='Whether to use adaptive augmentation pipeline.')
+                help='Whether to use adaptive augmentation pipeline.'),
+            cls.command_option(
+                '--use_region_based_loss', type=cls.bool_type, default=False,
+                help='Whether to use region-based loss.'),
+            cls.command_option(
+                '--region_based_penalty_weight', type=cls.float_type,
+                default=10,
+                help='Weight of region-based loss. Recommended from 1 to 10.'),
+            cls.command_option(
+                '--region_based_use_soft_box', type=cls.bool_type, default=False,
+                help='Whether to use soft_box in region-based loss.'),
+            cls.command_option(
+                '--region_based_soft_box_margin', type=cls.int_type, default=40,
+                help='Margin of soft_box in region-based loss.'),
+            cls.command_option(
+                '--region_based_soft_box_kernel_size', type=cls.int_type, default=51,
+                help='Kernel size of the gaussian blur in soft_box.'),
+            cls.command_option(
+                '--region_based_soft_box_sigma', type=cls.int_type, default=30,
+                help='Sigma of the gaussian blur in soft_box.'),
         ])
 
         return options
@@ -290,14 +310,29 @@ To train a StyleGAN2 model, the recommended settings are as follows:
             )
         )
 
+        use_region_based_loss = self.args.pop('use_region_based_loss')
+        loss = LOSS if not use_region_based_loss else REGION_BASED_LOSS
         self.config.loss.update(
-            loss_type=LOSS,
+            loss_type=loss,
             d_loss_kwargs=dict(r1_gamma=self.args.pop('r1_gamma'),
                                r1_interval=r1_interval),
-            g_loss_kwargs=dict(pl_batch_shrink=self.args.pop('pl_batch_shrink'),
-                               pl_weight=self.args.pop('pl_weight'),
-                               pl_decay=self.args.pop('pl_decay'),
-                               pl_interval=pl_interval)
+            g_loss_kwargs=dict(
+                pl_batch_shrink=self.args.pop('pl_batch_shrink'),
+                pl_weight=self.args.pop('pl_weight'),
+                pl_decay=self.args.pop('pl_decay'),
+                pl_interval=pl_interval,
+                region_based=dict(
+                    penalty_weight=self.args.pop('region_based_penalty_weight'),
+                    use_soft_box=self.args.pop('region_based_use_soft_box'),
+                    soft_box_margin=self.args.pop('region_based_soft_box_margin'),
+                    soft_box_kernel_size=self.args.pop(
+                        'region_based_soft_box_kernel_size'
+                    ),
+                    soft_box_sigma=self.args.pop(
+                        'region_based_soft_box_sigma'
+                    ),
+                )
+            )
         )
 
         # self.config.controllers.update(

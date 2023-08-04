@@ -26,6 +26,12 @@ VALID_ANNOTATIONS=/home/gregschuit/projects/cxr-data/annotations/enlarged_cardia
 
 ./scripts/dist_train.sh ${GPUS} stylegan2 \
     --job_name='r_c_stylegan2_imagenome256_enlarged_cardiac_pa_resized_w10' \
+    --use_region_based_loss=true \
+    --region_based_penalty_weight=10.0 \
+    --region_based_use_soft_box=false \
+    --region_based_soft_box_margin=40 \
+    --region_based_soft_box_kernel_size=51 \
+    --region_based_soft_box_sigma=30 \
     --seed=0 \
     --resolution=256 \
     --image_channels=1 \
