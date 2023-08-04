@@ -13,6 +13,8 @@ from torchvision.transforms.functional import gaussian_blur
 
 __all__ = ['StyleGAN2RegionBasedLoss']
 
+YOLO_WEIGHTS_PATH = '/home/gregschuit/projects/cxr-object-detection/runs/detect/train/weights/best.pt'
+
 
 def postprocess_batch(generated_images):
     _min, _max = -1, 1
@@ -102,7 +104,7 @@ class StyleGAN2RegionBasedLoss(StyleGAN2Loss):
             'soft_box_sigma'
         ] = self.region_based_args.get('soft_box_sigma', 30)
 
-        self.yolo = YOLO('/home/gregschuit/projects/cxr-object-detection/runs/detect/train/weights/best.pt', task='detect')
+        self.yolo = YOLO(YOLO_WEIGHTS_PATH, task='detect')
         self.yolo.to(runner.device)
 
         runner.running_stats.add('Loss/OutOfBoxPenalty',
