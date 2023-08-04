@@ -9,7 +9,7 @@ from .stylegan2_loss import StyleGAN2Loss
 
 # TODO: This should be other model file
 from ultralytics import YOLO
-from torchvision.transforms.functional import gaussian_blur, to_pil_image, pil_to_tensor
+from torchvision.transforms.functional import gaussian_blur
 
 __all__ = ['StyleGAN2RegionBasedLoss']
 
@@ -44,9 +44,13 @@ def get_mask(
     soft_box_kernel_size=51,
     soft_box_sigma=30,
 ):
-    # TODO: Is it necessary to transform the image to tensor? It should be enough 
-    # to just use the PIL image's shape.
-    mask = torch.ones_like(pil_to_tensor(img))
+    """Constructs a mask for the given image and bounding box.
+    
+    Args:
+        img (torch.Tensor): Image tensor of shape (C, H, W).
+
+    """
+    mask = torch.ones(img.shape)
     mask = mask.to(device)
     x1, y1, x2, y2 = map(int, box)
     mask[:, y1:y2, x1:x2] = 0
@@ -154,10 +158,10 @@ class StyleGAN2RegionBasedLoss(StyleGAN2Loss):
 
         # Predict bounding boxes over negative images.
         with torch.no_grad():
-            # TODO: Is it necesary to convert to PIL?
-            # np.array should be faster, as it wouldn't require a for loop.
-            pil_imgs = [to_pil_image(img) for img in negative_images]
-            results = self.yolo.predict(pil_imgs, verbose=False)
+            results = self.yolo.predict(
+                negative_images.repeat(1, 3, 1, 1),
+                verbose=False,
+            )
 
         # The following part is anomaly-specific. In this case, we hard-code the
         # class index for the cardiac box.
@@ -180,7 +184,7 @@ class StyleGAN2RegionBasedLoss(StyleGAN2Loss):
                 soft_box_sigma=self.region_based_args[
                     'soft_box_sigma'
                 ],
-            ) for img, box in zip(pil_imgs, cardiac_boxes)
+            ) for img, box in zip(images, cardiac_boxes)
         ]
         mask = torch.cat(masks, axis=0).unsqueeze(1)
 
