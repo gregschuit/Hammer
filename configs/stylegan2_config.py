@@ -11,6 +11,8 @@ DISCRIMINATOR = 'StyleGAN2Discriminator'
 GENERATOR = 'StyleGAN2Generator'
 LOSS = 'StyleGAN2Loss'
 REGION_BASED_LOSS = 'StyleGAN2RegionBasedLoss'
+ENCODER = 'ChexplainingEncoder'
+CLASSIFIER = 'TorchDenseNet121'
 
 
 class StyleGAN2Config(BaseConfig):
@@ -181,6 +183,10 @@ To train a StyleGAN2 model, the recommended settings are as follows:
             cls.command_option(
                 '--region_based_soft_box_sigma', type=cls.int_type, default=30,
                 help='Sigma of the gaussian blur in soft_box.'),
+            cls.command_option(
+                '--classifier_weights_path', type=str, default=None,
+                help='Path to the classifier weights.',
+            ),
         ])
 
         return options
@@ -307,7 +313,36 @@ To train a StyleGAN2 model, the recommended settings are as follows:
                                 impl=impl),
                 g_ema_img=self.args.pop('g_ema_img'),
                 g_ema_rampup=self.args.pop('g_ema_rampup')
-            )
+            ),
+            encoder=dict(
+                model=dict(
+                    model_type=ENCODER,
+                    size=resolution,
+                    channel_multiplier=2,
+                    blur_kernel=[1, 3, 3, 1],
+                    output_channels=512,  # Embedding size (z = 512, w = ?).
+                ),
+                lr=dict(lr_type='FIXED'),
+                opt=dict(opt_type='Adam',
+                         base_lr=d_lr,  # TODO: Use a different lr for encoder?
+                         betas=(d_beta_1, d_beta_2)),
+                kwargs_train=dict(),
+                kwargs_val=dict(),
+            ),
+            classifier=dict(
+                model=dict(
+                    model_type=CLASSIFIER,
+                    n_classes=1,
+                    weights=self.args.pop('classifier_weights_path'),
+                ),
+                lr=dict(lr_type='FIXED'),  # This wont be used if model is frozen.
+                opt=dict(opt_type='Adam',   # This wont be used if model is frozen.
+                         base_lr=d_lr,
+                         betas=(d_beta_1, d_beta_2)),
+                freeze_keywords='*',  # Shorthand for all layers
+                kwargs_train=dict(),
+                kwargs_val=dict(),
+            ),
         )
 
         use_region_based_loss = self.args.pop('use_region_based_loss')

@@ -146,23 +146,25 @@ class StyleGAN2Loss(BaseLoss):
                 0, label_dim, (batch_size,), device=runner.device)
             labels = F.one_hot(rnd_labels, num_classes=label_dim)
 
-        self.run_G_from_latents(runner, latents, labels, sync=sync)
+        return self.run_G_from_latents(runner, latents, labels, sync=sync)
 
-    def run_E(self, images, labels=None, sync=True):
+    @staticmethod
+    def run_E(runner, images, _labels=None, sync=True):
         """Encodes images into latent codes."""
         # Forward encoder.
-        E = self.runner.ddp_models['encoder']
-        E_kwargs = self.runner.model_kwargs_train['encoder']
+        E = runner.ddp_models['encoder']
+        E_kwargs = runner.model_kwargs_train['encoder']
         with ddp_sync(E, sync=sync):
-            return E(images, labels, **E_kwargs)
+            return E(images, **E_kwargs)
 
-    def run_C(self, images, labels=None, sync=True):
+    @staticmethod
+    def run_C(runner, images, _labels=None, sync=True):
         """Classifies images."""
         # Forward classifier.
-        C = self.runner.ddp_models['classifier']
-        C_kwargs = self.runner.model_kwargs_train['classifier']
+        C = runner.ddp_models['classifier']
+        C_kwargs = runner.model_kwargs_train['classifier']
         with ddp_sync(C, sync=sync):
-            return C(images, labels, **C_kwargs)
+            return C(images, **C_kwargs)
 
     @staticmethod
     def run_D(runner, images, labels, sync=True):
@@ -210,18 +212,16 @@ class StyleGAN2Loss(BaseLoss):
         """Computes loss for generator."""
         images_real = _data['image']
 
-        # TODO: Programar E (encoder de chexplain) y C (densenet congelada).
         # TODO: Programar opción para que se condicione en w y no en z.
 
-        images_latent = self.run_E(images_real, sync=sync)
-        images_label = self.run_C(images_real, sync=sync)
+        images_latent = self.run_E(runner, images_real, sync=sync)
+        images_label = self.run_C(runner, images_real, sync=sync)
 
         fake_results_from_encoded = self.run_G_from_latents(
             runner,
             images_latent,
             images_label,
             sync=sync,
-            requires_grad=True,
         )
 
         fake_results_from_noise = self.run_G(runner, sync=sync)

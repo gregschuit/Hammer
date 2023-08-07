@@ -12,6 +12,8 @@ from .stylegan3_generator import StyleGAN3Generator
 from .ghfeat_encoder import GHFeatEncoder
 from .perceptual_model import PerceptualModel
 from .inception_model import InceptionModel
+from .chexplaining_models import ChexplainingEncoder
+from .densenet_classifier import TorchDenseNet121
 
 __all__ = ['build_model']
 
@@ -26,7 +28,9 @@ _MODELS = {
     'StyleGAN3Generator': StyleGAN3Generator,
     'GHFeatEncoder': GHFeatEncoder,
     'PerceptualModel': PerceptualModel.build_model,
-    'InceptionModel': InceptionModel.build_model
+    'InceptionModel': InceptionModel.build_model,
+    'ChexplainingEncoder': ChexplainingEncoder,
+    'TorchDenseNet121': TorchDenseNet121,
 }
 
 
