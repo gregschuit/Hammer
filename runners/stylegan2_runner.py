@@ -33,7 +33,7 @@ class StyleGAN2Runner(BaseRunner):
                                log_format='.4f',
                                log_strategy='CURRENT')
 
-    def train_step(self, data):
+    def _train_step_generator(self, data):
         # Update generator.
         self.models['discriminator'].requires_grad_(False)
         self.models['generator'].requires_grad_(True)
@@ -51,6 +51,7 @@ class StyleGAN2Runner(BaseRunner):
             pl_penalty.backward()
             self.step_optimizer('generator')
 
+    def _train_step_discriminator(self, data):
         # Update discriminator.
         self.models['discriminator'].requires_grad_(True)
         self.models['generator'].requires_grad_(False)
@@ -72,6 +73,7 @@ class StyleGAN2Runner(BaseRunner):
             r1_penalty.backward()
             self.step_optimizer('discriminator')
 
+    def _smooth_generator(self):
         # Life-long update generator.
         if self.g_ema_rampup is not None and self.g_ema_rampup > 0:
             g_ema_img = min(self.g_ema_img, self.seen_img * self.g_ema_rampup)
@@ -82,3 +84,8 @@ class StyleGAN2Runner(BaseRunner):
         self.smooth_model(src=self.models['generator'],
                           avg=self.models['generator_smooth'],
                           beta=beta)
+
+    def train_step(self, data):
+        self._train_step_generator(data)
+        self._train_step_discriminator(data)
+        self._smooth_generator()

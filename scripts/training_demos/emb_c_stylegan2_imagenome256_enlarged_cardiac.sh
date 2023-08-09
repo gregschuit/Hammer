@@ -24,10 +24,13 @@ MIMIC_CXR_JPG_DIR=/mnt/workspace/mimic-cxr-jpg/images-small
 TRAIN_ANNOTATIONS=/home/gregschuit/projects/cxr-data/annotations/enlarged_cardiac_PA_train.txt
 VALID_ANNOTATIONS=/home/gregschuit/projects/cxr-data/annotations/enlarged_cardiac_PA_valid.txt
 
+# TRAIN_ANNOTATIONS=/home/gregschuit/projects/cxr-data/annotations/dev64.txt
+# VALID_ANNOTATIONS=/home/gregschuit/projects/cxr-data/annotations/dev64.txt
+
 CLASSIFIER_WEIGTHS_PATH=/home/gregschuit/projects/thesis/results/cxr_classification/enlarged_cardiac_PA/densenet121_0/checkpoints/best-epoch-3.pth
 
-./scripts/dist_train.sh ${GPUS} stylegan2 \
-    --job_name='emb_c_stylegan2_imagenome256_enlarged_cardiac_pa_resized_gpus=2' \
+./scripts/dist_train.sh ${GPUS} embed_stylegan2 \
+    --job_name='emb_c_stylegan2_imagenome256_enlarged_cardiac_pa_resized_refactored_continue_4' \
     --classifier_weights_path=${CLASSIFIER_WEIGTHS_PATH} \
     --use_region_based_loss=false \
     --seed=0 \
@@ -41,12 +44,12 @@ CLASSIFIER_WEIGTHS_PATH=/home/gregschuit/projects/thesis/results/cxr_classificat
     --val_anno_format=txt \
     --val_max_samples=-1 \
     --total_img=300_000 \
-    --batch_size=2 \
+    --batch_size=4 \
     --val_batch_size=16 \
     --train_data_mirror=false \
     --data_loader_type='iter' \
     --data_repeat=200 \
-    --data_workers=3 \
+    --data_workers=20 \
     --data_prefetch_factor=2 \
     --data_pin_memory=true \
     --train_data_file_format='jpg_dir' \
@@ -78,4 +81,5 @@ CLASSIFIER_WEIGTHS_PATH=/home/gregschuit/projects/thesis/results/cxr_classificat
     --use_ada=false \
     --num_fp16_res=0 \
     --label_dim=2 \
+    --resume_path=/home/gregschuit/projects/Hammer/work_dirs/emb_c_stylegan2_imagenome256_enlarged_cardiac_pa_resized_refactored_continue_3/checkpoints/checkpoint-032000.pth \
     ${@:4}

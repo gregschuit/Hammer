@@ -1077,6 +1077,7 @@ class BaseRunner(object):
             running_stats: Whether to load the running stats. (default: False)
             map_location: Map location used for model loading. (default: `cpu`)
         """
+        map_location = 'gpu'
         self.logger.info(f'Resuming from checkpoint `{filepath}` ...')
         if not os.path.isfile(filepath):
             raise IOError(f'Checkpoint `{filepath}` does not exist!')
@@ -1180,3 +1181,6 @@ class BaseRunner(object):
             tailing_message = f' (iteration {self.iter})'
         self.logger.info(f'Successfully loaded from checkpoint `{filepath}`.'
                          f'{tailing_message}')
+
+        del checkpoint
+        torch.cuda.empty_cache()

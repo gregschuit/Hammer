@@ -32,7 +32,7 @@ class TorchDenseNet121(nn.Module):
 
         self.model.classifier = nn.Sequential(
             nn.Linear(1024, n_classes),
-            nn.Sigmoid()
+            # nn.Sigmoid()  # We comment this line to output the raw logits.
         )
 
         if use_custom_weights:
@@ -55,6 +55,5 @@ class TorchDenseNet121(nn.Module):
         # Model expects 3-channel input.
         if x.shape[1] == 1:
             x = x.repeat(1, 3, 1, 1)
-        x = self.model(x).squeeze()
-        x = F.one_hot(torch.tensor(x.round(), dtype=torch.int64), num_classes=2)
+        x = self.model(x)
         return x

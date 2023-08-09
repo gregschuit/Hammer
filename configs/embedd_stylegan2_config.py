@@ -1,11 +1,14 @@
 # python3.7
-"""Configuration for training StyleGAN2."""
+"""Configuration for training StyleGAN2 with GAN Inversion."""
 
-from .base_config import BaseConfig
+from .base_config import BaseConfig    
 
-__all__ = ['StyleGAN2Config']
+__all__ = ['EmbedStyleGAN2Config']
 
-RUNNER = 'StyleGAN2Runner'
+RUNNER = 'EmbedStyleGAN2Runner'
+ENCODER = 'ChexplainingEncoder'
+CLASSIFIER = 'TorchDenseNet121'
+
 DATASET = 'ImageDataset'
 DISCRIMINATOR = 'StyleGAN2Discriminator'
 GENERATOR = 'StyleGAN2Generator'
@@ -13,11 +16,11 @@ LOSS = 'StyleGAN2Loss'
 REGION_BASED_LOSS = 'StyleGAN2RegionBasedLoss'
 
 
-class StyleGAN2Config(BaseConfig):
+class EmbedStyleGAN2Config(BaseConfig):
     """Defines the configuration for training StyleGAN2."""
 
-    name = 'stylegan2'
-    hint = 'Train a StyleGAN2 model.'
+    name = 'embed_stylegan2'
+    hint = 'Train a StyleGAN2 model with GAN Inversion.'
     info = '''
 To train a StyleGAN2 model, the recommended settings are as follows:
 
@@ -312,6 +315,50 @@ To train a StyleGAN2 model, the recommended settings are as follows:
                 g_ema_img=self.args.pop('g_ema_img'),
                 g_ema_rampup=self.args.pop('g_ema_rampup')
             ),
+            
+            encoder=dict(
+                model=dict(
+                    model_type=ENCODER,
+                    size=resolution,
+                    channel_multiplier=2,
+                    blur_kernel=[1, 3, 3, 1],
+                    output_channels=latent_dim,  # Embedding size (z = 512, w = ?).
+                ),
+                lr=dict(lr_type='FIXED'),
+                opt=dict(opt_type='Adam',
+                         base_lr=d_lr,  # TODO: Use a different lr for encoder?
+                         betas=(d_beta_1, d_beta_2)),
+                kwargs_train=dict(),
+                kwargs_val=dict(),
+            ),
+            classifier=dict(
+                model=dict(
+                    model_type=CLASSIFIER,
+                    n_classes=1,
+                    weights=self.args.pop('classifier_weights_path'),
+                ),
+                lr=dict(lr_type='FIXED'),  # This wont be used if model is frozen.
+                opt=dict(opt_type='Adam',   # This wont be used if model is frozen.
+                         base_lr=d_lr,
+                         betas=(d_beta_1, d_beta_2)),
+                freeze_keywords='*',  # Shorthand for all layers
+                kwargs_train=dict(),
+                kwargs_val=dict(),
+            ),
+            lpips=dict(
+                model=dict(
+                    model_type='LPIPS',
+                    net_type='alex',
+                    version='0.1',
+                ),
+                lr=dict(lr_type='FIXED'),  # This wont be used if model is frozen.
+                opt=dict(opt_type='Adam',   # This wont be used if model is frozen.
+                         base_lr=d_lr,
+                         betas=(d_beta_1, d_beta_2)),
+                freeze_keywords='*',  # Shorthand for all layers
+                kwargs_train=dict(),
+                kwargs_val=dict(),
+            ),
         )
 
         use_region_based_loss = self.args.pop('use_region_based_loss')
@@ -415,5 +462,5 @@ To train a StyleGAN2 model, the recommended settings are as follows:
                 interval=None,
                 first_iter=None,
                 save_best=False
-            )
+            ),
         )

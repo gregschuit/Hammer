@@ -5,6 +5,7 @@ from .faster_rcnn_runner import FasterRCNNRunner
 from .stylegan_runner import StyleGANRunner
 from .stylegan2_runner import StyleGAN2Runner
 from .stylegan3_runner import StyleGAN3Runner
+from .embed_stylegan2_runner import EmbedStyleGAN2Runner
 
 __all__ = ['build_runner']
 
@@ -12,7 +13,8 @@ _RUNNERS = {
     'FasterRCNNRunner': FasterRCNNRunner,
     'StyleGANRunner': StyleGANRunner,
     'StyleGAN2Runner': StyleGAN2Runner,
-    'StyleGAN3Runner': StyleGAN3Runner
+    'StyleGAN3Runner': StyleGAN3Runner,
+    'EmbedStyleGAN2Runner': EmbedStyleGAN2Runner,
 }
 
 

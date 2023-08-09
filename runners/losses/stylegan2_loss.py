@@ -117,6 +117,24 @@ class StyleGAN2Loss(BaseLoss):
         runner.logger.info(f'pl_weight: {self.pl_weight}', indent_level=2)
         runner.logger.info(f'pl_decay: {self.pl_decay}', indent_level=2)
         runner.logger.info(f'pl_interval: {self.pl_interval}', indent_level=2)
+    
+        # Reconstruction losses
+        runner.running_stats.add('Loss/Recon. Image L1',
+                                 log_name='loss_recon_img_l1',
+                                 log_format='.3f',
+                                 log_strategy='AVERAGE')
+        runner.running_stats.add('Loss/Recon. Class Logits KL',
+                                 log_name='loss_recon_logits_kl',
+                                 log_format='.3f',
+                                 log_strategy='AVERAGE')
+        runner.running_stats.add('Loss/Recon. Latent z L1',
+                                 log_name='loss_recon_latent_z_l1',
+                                 log_format='.3f',
+                                 log_strategy='AVERAGE')
+        runner.running_stats.add('Loss/Recon. Image LPIPS',
+                                 log_name='loss_recon_img_lpips',
+                                 log_format='.3f',
+                                 log_strategy='AVERAGE')
 
     @staticmethod
     def run_G_from_latents(runner, latents, labels=None, sync=True):
@@ -208,19 +226,96 @@ class StyleGAN2Loss(BaseLoss):
         pl_penalty = (pl_length - pl_mean).square()
         return pl_penalty
 
+    @staticmethod
+    def _labels_from_logits(logits):
+        """Returns labels from logits.
+        
+        This function is useful when the classifier was trained on only one class,
+        so it is necessary to round the logits and then apply one_hot to obtain the
+        labels with shape (batch_size, 2).
+
+        Args:
+            logits (torch.Tensor): Logits from the classifier. Shape (batch_size, 1).
+        
+        Returns:
+            torch.Tensor: Labels from the logits. Shape (batch_size, 2).
+
+        """
+        binary_output = torch.tensor(F.sigmoid(logits.squeeze()).round(), dtype=torch.int64)
+        return F.one_hot(binary_output, num_classes=2)
+
+    @staticmethod
+    def run_LPIPS(runner, a, b, sync=True):
+        """Runs LPIPS Model."""
+        # Forward classifier.
+        LPIPS = runner.ddp_models['lpips']
+        LPIPS_kwargs = runner.model_kwargs_train['lpips']
+        with ddp_sync(LPIPS, sync=sync):
+            return LPIPS(a, b, **LPIPS_kwargs)
+
+    def reconstruction_loss(self, runner, data, sync=True):
+        """Computes reconstruction loss."""
+
+        real_img = data['image']
+        real_encoded = self.run_E(runner, real_img, sync=True)
+        real_logits = self.run_C(runner, real_img, sync=True)
+        real_labels = self._labels_from_logits(real_logits)
+
+        fake_results_from_encoded = self.run_G_from_latents(
+            runner,
+            real_encoded,
+            real_labels,
+            sync=sync,
+        )
+        fake_img = fake_results_from_encoded['image']
+        fake_logits = self.run_C(runner, fake_img, sync=True)
+
+        # KL Divergence between real and fake logits.
+        kl_div = F.kl_div(
+            F.log_softmax(real_logits, dim=1),
+            F.softmax(fake_logits, dim=1),
+            reduction='batchmean',
+        )
+
+        fake_encoded = self.run_E(runner, fake_img, sync=sync)
+
+        # Reconstruction loss
+        reconstruct_loss_x = F.l1_loss(fake_img, real_img)  # Shape (,)
+        reconstruct_loss_latent = F.l1_loss(fake_encoded, real_encoded)  # Shape (,)
+        reconstruct_loss_lpips = self.run_LPIPS(
+            runner,
+            fake_img / fake_img.max(),
+            real_img / real_img.max(),
+            sync=sync,
+        ).flatten()  # Shape (1,). Flatten gets rid of extra dimensions.
+
+        reconstruct_loss = (
+            reconstruct_loss_x
+            + reconstruct_loss_latent
+            + reconstruct_loss_lpips
+        )
+
+        runner.running_stats.update({'Loss/Recon. Image L1': reconstruct_loss_x})
+        runner.running_stats.update({'Loss/Recon. Class Logits KL': kl_div})
+        runner.running_stats.update({'Loss/Recon. Latent z L1': reconstruct_loss_latent})
+        runner.running_stats.update({'Loss/Recon. Image LPIPS': reconstruct_loss_lpips})
+
+        return reconstruct_loss + kl_div  # Shape (1,)
+
     def g_loss(self, runner, _data, sync=True):
         """Computes loss for generator."""
+        # TODO: Programar opción para que se condicione en w y no en z.
+        
         images_real = _data['image']
 
-        # TODO: Programar opción para que se condicione en w y no en z.
-
-        images_latent = self.run_E(runner, images_real, sync=sync)
-        images_label = self.run_C(runner, images_real, sync=sync)
+        images_latent = self.run_E(runner, images_real, sync=True)
+        images_logits = self.run_C(runner, images_real, sync=True)
+        images_labels = self._labels_from_logits(images_logits)
 
         fake_results_from_encoded = self.run_G_from_latents(
             runner,
             images_latent,
-            images_label,
+            images_labels,
             sync=sync,
         )
 

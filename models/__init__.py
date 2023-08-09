@@ -14,6 +14,7 @@ from .perceptual_model import PerceptualModel
 from .inception_model import InceptionModel
 from .chexplaining_models import ChexplainingEncoder
 from .densenet_classifier import TorchDenseNet121
+from .lpips_pytorch import LPIPS
 
 __all__ = ['build_model']
 
@@ -31,6 +32,7 @@ _MODELS = {
     'InceptionModel': InceptionModel.build_model,
     'ChexplainingEncoder': ChexplainingEncoder,
     'TorchDenseNet121': TorchDenseNet121,
+    'LPIPS': LPIPS,
 }
 
 

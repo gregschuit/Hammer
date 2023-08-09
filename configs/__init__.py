@@ -6,6 +6,7 @@ from .stylegan_config import StyleGANConfig
 from .stylegan2_config import StyleGAN2Config
 from .stylegan2_finetune_config import StyleGAN2FineTuneConfig
 from .stylegan3_config import StyleGAN3Config
+from .embedd_stylegan2_config import EmbedStyleGAN2Config
 
 __all__ = ['CONFIG_POOL', 'build_config']
 
@@ -14,7 +15,8 @@ CONFIG_POOL = [
     StyleGANConfig,
     StyleGAN2Config,
     StyleGAN2FineTuneConfig,
-    StyleGAN3Config
+    StyleGAN3Config,
+    EmbedStyleGAN2Config,
 ]
 
 
