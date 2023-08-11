@@ -12,7 +12,7 @@ CLASSIFIER = 'TorchDenseNet121'
 DATASET = 'ImageDataset'
 DISCRIMINATOR = 'StyleGAN2Discriminator'
 GENERATOR = 'StyleGAN2Generator'
-LOSS = 'StyleGAN2Loss'
+LOSS = 'EmbedStyleGAN2Loss'
 REGION_BASED_LOSS = 'StyleGAN2RegionBasedLoss'
 
 

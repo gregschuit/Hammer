@@ -181,10 +181,6 @@ To train a StyleGAN2 model, the recommended settings are as follows:
             cls.command_option(
                 '--region_based_soft_box_sigma', type=cls.int_type, default=30,
                 help='Sigma of the gaussian blur in soft_box.'),
-            cls.command_option(
-                '--classifier_weights_path', type=str, default=None,
-                help='Path to the classifier weights.',
-            ),
         ])
 
         return options
