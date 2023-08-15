@@ -15,6 +15,7 @@ from .inception_model import InceptionModel
 from .chexplaining_models import ChexplainingEncoder
 from .densenet_classifier import TorchDenseNet121
 from .lpips_pytorch import LPIPS
+from .stylegan2_generator_wconditioned import StyleGAN2GeneratorW
 
 __all__ = ['build_model']
 
@@ -33,6 +34,7 @@ _MODELS = {
     'ChexplainingEncoder': ChexplainingEncoder,
     'TorchDenseNet121': TorchDenseNet121,
     'LPIPS': LPIPS,
+    'StyleGAN2GeneratorW': StyleGAN2GeneratorW,
 }
 
 

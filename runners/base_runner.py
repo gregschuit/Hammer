@@ -834,10 +834,11 @@ class BaseRunner(object):
         assert nan == 0
         for param_name, param in self.models[name].named_parameters():
             if param.grad is None:
-                if self.model_has_unused_param[name]:
-                    continue
-                raise ValueError(f'Parameter `{param_name}` from '
-                                 f'model `{name}` does not have gradient!')
+                continue
+                # if self.model_has_unused_param[name]:
+                #     continue
+                # raise ValueError(f'Parameter `{param_name}` from '
+                #                  f'model `{name}` does not have gradient!')
             if min_val is None:
                 min_val = torch.finfo(param.grad.dtype).min
             if max_val is None:

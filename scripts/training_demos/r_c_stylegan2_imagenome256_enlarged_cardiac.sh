@@ -25,8 +25,8 @@ TRAIN_ANNOTATIONS=/home/gregschuit/projects/cxr-data/annotations/enlarged_cardia
 VALID_ANNOTATIONS=/home/gregschuit/projects/cxr-data/annotations/enlarged_cardiac_PA_valid.txt
 
 ./scripts/dist_train.sh ${GPUS} stylegan2 \
-    --job_name='r_c_stylegan2_imagenome256_enlarged_cardiac_pa_resized_w10' \
-    --use_region_based_loss=true \
+    --job_name='debug_r_c_stylegan2_imagenome256_enlarged_cardiac_pa_resized' \
+    --use_region_based_loss=false \
     --region_based_penalty_weight=10.0 \
     --region_based_use_soft_box=false \
     --region_based_soft_box_margin=40 \
@@ -48,7 +48,7 @@ VALID_ANNOTATIONS=/home/gregschuit/projects/cxr-data/annotations/enlarged_cardia
     --train_data_mirror=false \
     --data_loader_type='iter' \
     --data_repeat=200 \
-    --data_workers=3 \
+    --data_workers=0 \
     --data_prefetch_factor=2 \
     --data_pin_memory=true \
     --train_data_file_format='jpg_dir' \

@@ -30,10 +30,10 @@ VALID_ANNOTATIONS=/home/gregschuit/projects/cxr-data/annotations/enlarged_cardia
 CLASSIFIER_WEIGTHS_PATH=/home/gregschuit/projects/thesis/results/cxr_classification/enlarged_cardiac_PA/densenet121_0/checkpoints/best-epoch-3.pth
 
 ./scripts/dist_train.sh ${GPUS} embed_stylegan2 \
-    --job_name='w_emb_c_stylegan2_imagenome256_enlarged_cardiac_pa_resized_continue' \
+    --job_name='emb_r_c_stylegan2_imagenome256_enlarged_cardiac_pa_resized_continue_2' \
     --classifier_weights_path=${CLASSIFIER_WEIGTHS_PATH} \
     --use_tensorboard=true \
-    --use_region_based_loss=false \
+    --use_region_based_loss=true \
     --seed=0 \
     --resolution=256 \
     --image_channels=1 \
@@ -82,5 +82,5 @@ CLASSIFIER_WEIGTHS_PATH=/home/gregschuit/projects/thesis/results/cxr_classificat
     --use_ada=false \
     --num_fp16_res=0 \
     --label_dim=2 \
-    --resume_path=/home/gregschuit/projects/Hammer/work_dirs/w_emb_c_stylegan2_imagenome256_enlarged_cardiac_pa_resized/checkpoints/checkpoint-019200.pth \
+    --resume_path=/home/gregschuit/projects/Hammer/work_dirs/emb_r_c_stylegan2_imagenome256_enlarged_cardiac_pa_resized_continue/checkpoints/checkpoint-032000.pth \
     ${@:4}

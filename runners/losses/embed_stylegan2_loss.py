@@ -141,7 +141,14 @@ class EmbedStyleGAN2Loss(BaseLoss):
         G = runner.ddp_models['generator']
         G_kwargs = runner.model_kwargs_train['generator']
         with ddp_sync(G, sync=sync):
-            return G(latents, labels, **G_kwargs)
+            return G(z=latents, label=labels, **G_kwargs)
+    
+    @staticmethod
+    def run_G_from_latents_w(runner, latents, labels=None, sync=True):
+        G = runner.ddp_models['generator']
+        G_kwargs = runner.model_kwargs_train['generator']
+        with ddp_sync(G, sync=sync):
+            return G(z=None, label=labels, **G_kwargs, w=latents)
 
     def run_G(self, runner, batch_size=None, sync=True, requires_grad=False):
         """Forwards generator.
@@ -261,7 +268,7 @@ class EmbedStyleGAN2Loss(BaseLoss):
         real_logits = self.run_C(runner, real_img, sync=True)
         real_labels = self._labels_from_logits(real_logits)
 
-        fake_results_from_encoded = self.run_G_from_latents(
+        fake_results_from_encoded = self.run_G_from_latents_w(
             runner,
             real_encoded,
             real_labels,
@@ -312,7 +319,7 @@ class EmbedStyleGAN2Loss(BaseLoss):
         images_logits = self.run_C(runner, images_real, sync=True)
         images_labels = self._labels_from_logits(images_logits)
 
-        fake_results_from_encoded = self.run_G_from_latents(
+        fake_results_from_encoded = self.run_G_from_latents_w(
             runner,
             images_latent,
             images_labels,

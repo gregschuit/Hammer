@@ -11,9 +11,9 @@ CLASSIFIER = 'TorchDenseNet121'
 
 DATASET = 'ImageDataset'
 DISCRIMINATOR = 'StyleGAN2Discriminator'
-GENERATOR = 'StyleGAN2Generator'
+GENERATOR = 'StyleGAN2GeneratorW'
 LOSS = 'EmbedStyleGAN2Loss'
-REGION_BASED_LOSS = 'StyleGAN2RegionBasedLoss'
+REGION_BASED_LOSS = 'EmbedStyleGAN2Loss'
 
 
 class EmbedStyleGAN2Config(BaseConfig):
@@ -293,6 +293,7 @@ To train a StyleGAN2 model, the recommended settings are as follows:
                            architecture=self.args.pop('g_architecture'),
                            fmaps_base=g_fmaps_base,
                            conv_clamp=conv_clamp),
+                has_unused_parameters=True,
                 lr=dict(lr_type='FIXED'),
                 opt=dict(opt_type='Adam',
                          base_lr=g_lr,

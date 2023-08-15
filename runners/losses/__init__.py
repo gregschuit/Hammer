@@ -6,6 +6,7 @@ from .stylegan_loss import StyleGANLoss
 from .stylegan2_loss import StyleGAN2Loss
 from .stylegan3_loss import StyleGAN3Loss
 from .stylegan2_region_based_loss import StyleGAN2RegionBasedLoss
+from .embed_stylegan2_loss import EmbedStyleGAN2Loss
 
 __all__ = ['build_loss']
 
@@ -15,6 +16,7 @@ _LOSSES = {
     'StyleGAN2Loss': StyleGAN2Loss,
     'StyleGAN3Loss': StyleGAN3Loss,
     'StyleGAN2RegionBasedLoss': StyleGAN2RegionBasedLoss,
+    'EmbedStyleGAN2Loss': EmbedStyleGAN2Loss,
 }
 
 
